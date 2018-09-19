@@ -1,3 +1,5 @@
+# Visual Studio code workspace files
+*.code-workspace
 
 # Created by https://www.gitignore.io/api/c,vim,c++,xcode,latex,linux,macos,python,windows,sublimetext,jupyternotebook
 
