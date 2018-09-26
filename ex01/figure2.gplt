@@ -1,0 +1,19 @@
+# set the type of terminal
+set term postscript eps color enhanced solid "Times-Roman" 14 lw 2
+set size ratio -1
+
+# set the name of the output file
+set output "figure2.eps"
+
+# axes labels 
+set xlabel "x"
+set ylabel "y"
+
+# prepare for drawing reference circle
+set parametric
+set trange[0:2*pi]
+fx(t)= cos(t)
+fy(t)= sin(t)
+
+# plot
+plot fx(t), fy(t) notitle, 'rand_num_c2836_p127773_2D_circle.dat' notitle
