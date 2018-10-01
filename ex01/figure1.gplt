@@ -3,17 +3,25 @@ set term postscript eps color enhanced solid "Times-Roman" 14 lw 2
 set size ratio -1
 
 # set the name of the output file
-set output "figure2.eps"
+set output output_2D 
 
 # axes labels 
-set xlabel "x"
-set ylabel "y"
-
-# prepare for drawing reference circle
-set parametric
-set trange[0:2*pi]
-fx(t)= cos(t)
-fy(t)= sin(t)
+set xlabel "x_i"
+set ylabel "x_{i+1}"
 
 # plot
-plot fx(t), fy(t) notitle, 'rand_num_c2836_p127773_2D_circle.dat' notitle
+plot input_2D notitle
+
+# set the name of the output file
+set output output_3D 
+
+# axes labels 
+set xlabel "x_i"
+set ylabel "x_{i+1}"
+set zlabel "x_{i+2}"
+
+# set xy plane to intersect z axis at zero
+set xyplane at 0
+
+# plot
+splot input_3D notitle

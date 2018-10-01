@@ -5,7 +5,7 @@
 #include <cmath>
 #include <cassert>
 
-int CongruentialRNG(int c, int p, int x_0)
+int CongruentialRNG(int c, int p, int x_0) // all as in task1
 {
     assert(x_0 < p && x_0 > 0);
     return (c * x_0) % p;
@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
     int x[2*n+1] = {};
     x[0]= atoi(argv[3]);
 
-    for (int i= 0; i < 2*n; i++)
+    for (int i= 0; i < 2*n; i++) // generate twice the amount of raw RN to make polar coordinates
     {
         x[i+1]= CongruentialRNG(c, p, x[i]);
     }
@@ -40,9 +40,9 @@ int main(int argc, char* argv[])
         output_2D << std::fixed << std::setprecision(10); 
         for (int i= 1; i < n + 1; i++)
         {
-            double r= sqrt((double)x[i]/(double)p);
-            double theta= 2 * M_PI * (double)x[i+n]/(double)p;
-            output_2D << r * cos(theta) << "\t" << r * sin(theta) << "\n";
+            double r= sqrt((double)x[i]/(double)p); // r from lower half of RN
+            double theta= 2 * M_PI * (double)x[i+n]/(double)p; // theta from upper half of RN
+            output_2D << r * cos(theta) << "\t" << r * sin(theta) << "\n"; // translate back to cartesion for plotting 
         }
         output_2D.close();
     }

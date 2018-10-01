@@ -7,29 +7,30 @@
 
 int CongruentialRNG(int c, int p, int x_0)
 {
-    assert(x_0 < p && x_0 > 0);
+    assert(x_0 < p && x_0 > 0); // make sure the input is smaller than p and positive
     return (c * x_0) % p;
 }
 
 int main(int argc, char* argv[])
 {
-     if (argc < 5)
+     if (argc < 5) // check command line arguments and give some help
      {  
         std::cerr << "Usage: " << argv[0] << " c p x_0 num_of_RN \n" << std::endl;
         return 1;
      }
-    int c, p, n;
+    int c, p, n; // assign all variables
     c= atoi(argv[1]);
     p= atoi(argv[2]);
     n= atoi(argv[4]);
     int x[n+1] = {};
     x[0]= atoi(argv[3]);
-    for (int i= 0; i < n; i++)
+
+    for (int i= 0; i < n; i++) // generate desired amount of RN
     {
         x[i+1]= CongruentialRNG(c, p, x[i]);
-        //std::cout << (double)x[i+1]/(double)p << std::endl;
     }
 
+    // All below: Output to file
     std::ostringstream fileNameStream_2D("rand_num_c", std::ios_base::ate);
     std::ostringstream fileNameStream_3D("rand_num_c", std::ios_base::ate);
     fileNameStream_2D << c << "_p" << p << "_2D.dat"; 
