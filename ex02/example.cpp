@@ -9,7 +9,7 @@
 
 using namespace std;
 
-main ()
+int main ()
 {
   int lat[N*N];  //create the NxN lattice
 
