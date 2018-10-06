@@ -5,9 +5,11 @@ CXXFLAGS = -std=c++11 -O3 -march=native -funroll-loops
 all: example
 
 example: example.cpp
-	$(CXX) $(CXXFLAGS) -o example.out $<
 
+task1: task1.cpp
+
+task2: task2.cpp
 
 .PHONY: clean
 clean:
-	@rm *.out *.ppm *.png
+	@rm -rf example task1 task2 task3 *.ppm *.png
