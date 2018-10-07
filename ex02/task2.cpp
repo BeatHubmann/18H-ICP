@@ -1,25 +1,26 @@
-#include "latticeview.h"
+#include "latticeview_v2.h"
 #include <stdio.h> // for sprintf()
 
 #include <iostream>
+#include <iomanip>
+#include <fstream>
 #include <random>
 #include <vector>
+#include <tuple>
+#include <limits>
+#include <omp.h>
 
-#define N 100            //Lateral number of cells
 #define ImageWidth 1000  //image width
 #define ImageHeight 1000 //image height
-#define SEED 42
 
-
-void PopulateLattice(int lattice[], const int size, const double treshold)
+void PopulateLattice(int lattice[], const int size, const double treshold, const int seed)
 {
-    mt19937 mt_rand(SEED);
+    std::mt19937 mt_rand(seed);
     std::uniform_real_distribution<double> uniform_zero_one(0.0, 1.0);
 
     for (int ij= 0; ij < size*size; ij++)
     {
         if (uniform_zero_one(mt_rand) < treshold) lattice[ij]= 1; // set to green
-        else lattice[ij]= 0; // set to white      
     }
 }
 
@@ -27,52 +28,34 @@ void GetNeighbors(int lattice[], const int size, const int position, std::vector
 {
     const int row= position / size;
     const int col= position % size;
-    auto isValid= [&size](int r, int c){ return !(
+    auto isValid= [&lattice, &size](int r, int c){ return !(
                                                     (r == -1) ||
                                                     (r == size) ||
                                                     (c == -1) ||
                                                     (c == size)
+                                                 ) &&
+                                                 (
+                                                     lattice[r*size + c] == 1
                                                  );
                                        };
-    if (isValid(row-1, col)) neighbors.push_back((row-1) * N + col); // north
-    if (isValid(row, col+1)) neighbors.push_back((row) * N + col+1); // east
-    if (isValid(row+1, col)) neighbors.push_back((row+1) * N + col); // south
-    if (isValid(row, col-1)) neighbors.push_back((row) * N + col-1); // west
+    if (isValid(row-1, col)) neighbors.push_back((row-1) * size + col); // north
+    if (isValid(row, col+1)) neighbors.push_back((row) * size + col+1); // east
+    if (isValid(row+1, col)) neighbors.push_back((row+1) * size + col); // south
+    if (isValid(row, col-1)) neighbors.push_back((row) * size + col-1); // west
 }
 
-bool TimeStep(int lattice[], const int size, const int time_step)
+bool StartFire(int lattice[], const int size)
 {
-    std::cout << "Stepping " << time_step << std::endl;
     bool fire_alive= false;
-    if (time_step == 1)
+    for (int j= 0; j < size; j++) // first row only
     {
-        for (int j= 0; j < N; j++)
+        if (lattice[j] == 1) 
         {
-            if (lattice[j] == 1) // if currently green == combustible
-            {
-                lattice[j]= 2; // set to red == on fire
-                fire_alive= true;
-            }
+            lattice[j]= 2; 
+            fire_alive= true;
         }
     }
-    else
-    {
-        for (int ij= 0; ij < size*size; ij++)
-        {
-            if (lattice[ij] == 2) // if currently red == on fire
-            {
-                lattice[ij]= 3; // set to black == burned out
-                std::vector<int> neighbors;
-                GetNeighbors(lattice, N, ij, neighbors);
-                if (neighbors.size() != 0) fire_alive= true;
-                for (int neighbor : neighbors)
-                {
-                    if (lattice[neighbor] == 1) lattice[neighbor]= 2; // set to red == on fire
-                }
-            }
-        }
-    }
-    return fire_alive; 
+    return fire_alive;
 }
 
 void OutputLattice(int lattice[], const int size, const int time_step)
@@ -83,28 +66,86 @@ void OutputLattice(int lattice[], const int size, const int time_step)
     sprintf(filename_png, "task2_%03d.png", time_step);
     sprintf(cmd, "convert %s %s; rm -f %s", filename, filename_png, filename);  
 
-    Print_lattice (lattice, N, N, ImageWidth, ImageHeight, filename);
+    Print_lattice (lattice, size, size, ImageWidth, ImageHeight, filename);
 
     system(cmd);
 }
 
-int main()
+std::tuple<bool, bool> TimeStep(int lattice[], const int size, const int time_step, const bool generate_images)
 {
-    const double treshold= 0.5;
-    int lattice[N * N];
-    int time_step= 1;
     bool fire_alive= false;
+    bool reached_opposite= false;
+    if (time_step % 10 == 0) std::cout << "..." <<std::endl;
+    int image_lattice[size * size]= {0};
 
-    PopulateLattice(lattice, N, treshold);
-
-    do 
+    #pragma omp parallel for 
+    for (int ij= 0; ij < size*size; ij++)
     {
-        fire_alive= TimeStep(lattice, N, time_step);
-        OutputLattice(lattice, N, time_step);
+        if (lattice[ij] == time_step-1)
+        {
+            image_lattice[ij]= 3;
+
+            std::vector<int> neighbors;
+            GetNeighbors(lattice, size, ij, neighbors);
+            if (neighbors.size() != 0)
+                fire_alive= true;
+            for (int neighbor : neighbors)
+            {
+                if (neighbor / size == (size-1)) reached_opposite= true;
+                lattice[neighbor]= time_step;
+                image_lattice[neighbor]= 2;
+            }
+        }
+        else if (lattice[ij] == 1) image_lattice[ij]= 1;
+        else if (lattice[ij] < time_step-1 && lattice[ij] > 1) image_lattice[ij]= 3;
+    }
+
+    if (generate_images) OutputLattice(image_lattice, size, time_step);
+
+    return std::make_tuple(fire_alive, reached_opposite); 
+}
+
+int main(int argc, char* argv[])
+{
+    if (argc < 5) // check command line arguments and give some help
+     {  
+        std::cerr << "Usage: " << argv[0] << " float_site_occupation_probabilty int_lattice_side_length int_random_seed bool_print_images\n" << std::endl;
+        return 1;
+     }
+
+    const double treshold= atof(argv[1]);
+    const int size= atoi(argv[2]);
+    const int seed= atoi(argv[3]);
+    const bool generate_images= atoi(argv[4]);
+    int lattice[size * size]= {0};
+
+    PopulateLattice(lattice, size, treshold, seed);
+
+    bool fire_alive= false;
+    bool reached_opposite= false;
+
+    int time_step= 2;
+    int shortest_path= std::numeric_limits<int>::max();
+    std::cout << std::left 
+              << std::setw(30) << "Lattice side length: " << std::setw(15) << size << std::endl
+              << std::setw(30) << "Occupation probability: " << std::setw(15) << treshold << std::endl
+              << std::setw(30) << "Random seed: " << std::setw(15) << seed << std::endl
+              << std::setw(30) << "Calculating..." << std::endl;
+
+    fire_alive= StartFire(lattice, size);
+    if (generate_images) Print_lattice (lattice, size, size, ImageWidth, ImageHeight, "task2_002.png");    
+
+    while (fire_alive)
+    {
         time_step++;
-    } while (fire_alive);
+        auto step_result= TimeStep(lattice, size, time_step, generate_images);
+        fire_alive= std::get<0>(step_result);
+        reached_opposite= std::get<1>(step_result);
+        if (reached_opposite) shortest_path= std::min(time_step-1, shortest_path);
+    }
 
-    std::cout << "Time step reached: " << time_step << std::endl;
-
+    std::cout << std::left
+              << std::setw(30) << "Fire duration:" << std::setw(15) << time_step-2 << std::endl
+              << std::setw(30) << "Shortest path:" << std::setw(15) << (shortest_path < std::numeric_limits<int>::max() ? shortest_path : -1) << std::endl;
     return 0;
 }
