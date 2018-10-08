@@ -1,0 +1,54 @@
+# set the type of terminal
+set term postscript eps color enhanced solid "Times-Roman" 14 lw 2
+set size ratio -1
+
+# set the name of the output file
+set output "figure3_1.eps"
+
+# axes labels 
+set xlabel "p"
+set ylabel "P(p)"
+
+# plot
+plot  "task3_10.dat" using 1:2 with lines title "N = 10", \
+      "task3_25.dat" using 1:2 with lines title "N = 25", \
+      "task3_50.dat" using 1:2 with lines title "N = 50", \
+      "task3_100.dat" using 1:2 with lines title "N = 100", \
+      "task3_250.dat" using 1:2 with lines title "N = 250", \
+      "task3_500.dat" using 1:2 with lines title "N = 500", \
+      "task3_1000.dat" using 1:2 with lines title "N = 1000"
+
+
+# set the name of the output file
+set output "figure3_2.eps"
+
+# axes labels 
+set xlabel "p"
+set ylabel "Avg fire duration (p)"
+set logscale y
+
+# plot
+plot  "task3_10.dat" using 1:3 with lines title "N = 10", \
+      "task3_25.dat" using 1:3 with lines title "N = 25", \
+      "task3_50.dat" using 1:3 with lines title "N = 50", \
+      "task3_100.dat" using 1:3 with lines title "N = 100", \
+      "task3_250.dat" using 1:3 with lines title "N = 250", \
+      "task3_500.dat" using 1:3 with lines title "N = 500", \
+      "task3_1000.dat" using 1:3 with lines title "N = 1000"
+    
+# set the name of the output file
+set output "figure3_3.eps"
+
+# axes labels 
+set xlabel "p"
+set ylabel "Avg shortest path length (p)"
+set logscale y
+
+# plot
+plot  "task3_10.dat" using 1:4 with lines title "N = 10", \
+      "task3_25.dat" using 1:4 with lines title "N = 25", \
+      "task3_50.dat" using 1:4 with lines title "N = 50", \
+      "task3_100.dat" using 1:4 with lines title "N = 100", \
+      "task3_250.dat" using 1:4 with lines title "N = 250", \
+      "task3_500.dat" using 1:4 with lines title "N = 500", \
+      "task3_1000.dat" using 1:4 with lines title "N = 1000"

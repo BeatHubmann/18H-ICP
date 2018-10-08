@@ -98,7 +98,7 @@ std::tuple<bool, bool> TimeStep(int lattice[], const int size, const int time_st
 
 auto RunExperiment(const int size, const double treshold, const int seed)
 {
-    std::cout << "Running exp " << seed << "\t" << treshold << std::endl;
+    //std::cout << "Running exp " << seed << "\t" << treshold << std::endl;
     int lattice[size * size]{0};
 
     PopulateLattice(lattice, size, treshold, seed);
@@ -116,12 +116,15 @@ auto RunExperiment(const int size, const double treshold, const int seed)
         time_step++;
         auto step_result= TimeStep(lattice, size, time_step);
         fire_alive= std::get<0>(step_result);
-        if (!(spanning_cluster) && std::get<1>(step_result));
+        if (!(spanning_cluster) && std::get<1>(step_result))
+        {
             shortest_path= time_step -1;
+            spanning_cluster= true;
+        }
     }
     const int fire_duration= time_step - 2;
 
-    return std::make_tuple(spanning_cluster, fire_duration, shortest_path);
+    return std::make_tuple((int)spanning_cluster, fire_duration, shortest_path);
 }
 
 
@@ -129,16 +132,27 @@ auto RunExperiment(const int size, const double treshold, const int seed)
 
 int main(int argc, char* argv[])
 {
-    std::vector<double> tresholds{0.1, 0.5, 0.9};
-    const int size= 100;
-    const int initial_seed= 42;
-    const int num_samples= 1000;
+    if (argc < 5) // check command line arguments and give some help
+     {  
+        std::cerr << "Usage: " << argv[0]
+                  << " int_occupation_prob_steps int_lattice_side_length int_initial_seed int_num_samples \n" << std::endl;
+        return 1;
+     }
+    const int treshold_steps= atoi(argv[1]);
+    const int size= atoi(argv[2]);
+    const int initial_seed= atoi(argv[3]);
+    const int num_samples= atoi(argv[4]);
+
+    const double treshold_step_size= 1.0 / treshold_steps;
+    std::vector<double> tresholds{0.0};
+    for (auto i= 1; i <= treshold_steps; i++)
+        tresholds.push_back(i * treshold_step_size);
     
     for (auto treshold : tresholds)
     {
         int num_spanning_clusters= 0;
-        int total_fire_duration= 0;
-        int total_shortest_path= 0;
+        long int total_fire_duration= 0;
+        long int total_shortest_path= 0;
         for (auto n= 0; n < num_samples; n++)
         {
             auto result= RunExperiment(size, treshold, initial_seed + n);
@@ -146,11 +160,15 @@ int main(int argc, char* argv[])
             total_fire_duration += std::get<1>(result);
             total_shortest_path += std::get<2>(result);
         }
-        std::cout << "Done!" << std::endl;
+        const double percolation_rate= num_spanning_clusters / (float)num_samples;
+        const double avg_fire_duration= total_fire_duration / (float)num_samples;
+        const double avg_shortest_path= (num_spanning_clusters < 1 ? 0.0 :
+                                         total_shortest_path / (float)num_spanning_clusters);
+
         std::cout << treshold << "\t"
-                  << num_spanning_clusters / num_samples << "\t"
-                  << total_fire_duration / num_samples << "\t"
-                  << total_shortest_path / num_spanning_clusters << std::endl;
+                  << percolation_rate << "\t"
+                  << avg_fire_duration << "\t"
+                  << avg_shortest_path << std::endl;
     }
     return 0;
 }
