@@ -1,17 +1,7 @@
-//#include "latticeview_v2.h"
-//#include <stdio.h> // for sprintf()
-
+#include <cstdlib>
 #include <iostream>
-#include <iomanip>
-//#include <fstream>
 #include <random>
 #include <vector>
-#include <tuple>
-#include <limits>
-#include <omp.h>
-
-//#define ImageWidth 1000  //image width
-//#define ImageHeight 1000 //image height
 
 void PopulateLattice(int lattice[], const int size, const double treshold, const int seed)
 {
@@ -24,116 +14,86 @@ void PopulateLattice(int lattice[], const int size, const double treshold, const
     }
 }
 
-void GetNeighbors(int lattice[], const int size, const int position, std::vector<int>& neighbors)
+int FindOriginalCluster(int m_k_cluster_mass[], const int candidate_k)
 {
-    const int row= position / size;
-    const int col= position % size;
-    auto isValid= [&lattice, &size](int r, int c){ return !(
-                                                    (r == -1) ||
-                                                    (r == size) ||
-                                                    (c == -1) ||
-                                                    (c == size)
-                                                 ) &&
-                                                 (
-                                                     lattice[r*size + c] == 1
-                                                 );
-                                       };
-    if (isValid(row-1, col)) neighbors.push_back((row-1) * size + col); // north
-    if (isValid(row, col+1)) neighbors.push_back((row) * size + col+1); // east
-    if (isValid(row+1, col)) neighbors.push_back((row+1) * size + col); // south
-    if (isValid(row, col-1)) neighbors.push_back((row) * size + col-1); // west
+    const int parent_k= -m_k_cluster_mass[candidate_k];
+    if (m_k_cluster_mass[parent_k] > 0)
+        return parent_k;
+    else
+        return FindOriginalCluster(m_k_cluster_mass, parent_k);
 }
 
-// bool StartFire(int lattice[], const int size)
-// {
-//     bool fire_alive= false;
-//     for (int j= 0; j < size; j++) // first row only
-//     {
-//         if (lattice[j] == 1) 
-//         {
-//             lattice[j]= 2; 
-//             fire_alive= true;
-//         }
-//     }
-//     return fire_alive;
-// }
-
-// void OutputLattice(int lattice[], const int size, const int time_step)
-// {
-//     char cmd[160], filename[160], filename_png[160];
-
-//     sprintf(filename, "task3_%03d.ppm", time_step);
-//     sprintf(filename_png, "task3_%03d.png", time_step);
-//     sprintf(cmd, "convert %s %s; rm -f %s", filename, filename_png, filename);  
-
-//     Print_lattice (lattice, size, size, ImageWidth, ImageHeight, filename);
-
-//     system(cmd);
-// }
-
-std::tuple<bool, bool> TimeStep(int lattice[], const int size, const int time_step)
+void CheckSite(int lattice[], int m_k_cluster_mass[], int& k_cluster_label,
+               const int size, const long int site_index)
 {
-    bool fire_alive= false;
-    bool reached_opposite= false;
-
-    #pragma omp parallel for 
-    for (int ij= 0; ij < size*size; ij++)
+    const int top_neighbor= (site_index / size > 0 ? lattice[site_index - size] : 0); // not in top row
+    const int left_neighbor= (site_index % size > 0 ? lattice[site_index - 1] : 0); // not at left border
+    if (top_neighbor == 0 && left_neighbor == 0) // Start a new cluster
     {
-        if (lattice[ij] == time_step-1)
-        {
-            std::vector<int> neighbors;
-            GetNeighbors(lattice, size, ij, neighbors);
-            if (neighbors.size() != 0)
-                fire_alive= true;
-            for (int neighbor : neighbors)
-            {
-                if (neighbor / size == (size-1)) reached_opposite= true;
-                lattice[neighbor]= time_step;
-            }
-        }
+        k_cluster_label++;
+        lattice[site_index]= k_cluster_label;
+        m_k_cluster_mass[k_cluster_label]= 1;
     }
-    return std::make_tuple(fire_alive, reached_opposite); 
+    else if (top_neighbor == 0 && left_neighbor > 0) // Tie to cluster on the left
+    {
+        const int true_k= (m_k_cluster_mass[left_neighbor] < 0 ?
+            FindOriginalCluster(m_k_cluster_mass, left_neighbor) : left_neighbor);
+        lattice[site_index]= true_k;
+        m_k_cluster_mass[true_k]++;
+    }
+    else if (top_neighbor > 0 && left_neighbor == 0) // Tie to cluster on top
+    {
+        const int true_k= (m_k_cluster_mass[top_neighbor] < 0 ?
+            FindOriginalCluster(m_k_cluster_mass, top_neighbor) : top_neighbor);
+        lattice[site_index]= true_k;
+        m_k_cluster_mass[true_k]++;
+    }
+    else if (top_neighbor > 0 && left_neighbor > 0 && top_neighbor != left_neighbor) // Choose cluster
+    {
+        const int adopting_cluster= std::min(top_neighbor, left_neighbor);
+        const int adopted_cluster= std::max(top_neighbor, left_neighbor);
+
+        const int true_adopting= (m_k_cluster_mass[adopting_cluster] < 0 ?
+            FindOriginalCluster(m_k_cluster_mass, adopting_cluster) : adopting_cluster);
+        const int true_adopted= (m_k_cluster_mass[adopted_cluster] < 0 ?
+            FindOriginalCluster(m_k_cluster_mass, adopted_cluster) : adopted_cluster);
+        lattice[site_index]= true_adopting;
+        if (true_adopting != true_adopted)
+        {
+            m_k_cluster_mass[true_adopting] += (m_k_cluster_mass[true_adopted] + 1);
+            m_k_cluster_mass[true_adopted]= -true_adopting;
+        }
+        else //if (true_adopting == true_adopted)
+            m_k_cluster_mass[true_adopting]++;
+    }
+    else if (top_neighbor > 0 && left_neighbor > 0 && top_neighbor == left_neighbor) // Tie to top&left cluster
+    {
+        const int true_k= (m_k_cluster_mass[top_neighbor] < 0 ?
+            FindOriginalCluster(m_k_cluster_mass, top_neighbor) : top_neighbor);
+        lattice[site_index]= true_k;
+        m_k_cluster_mass[true_k]++;
+    }
+    // // To print lattice for quick debugging 
+    // for (int i=0; i < size; i++)
+    //     {
+    //         for (int j=0; j < size; j++)
+    //             std::cout << lattice[i*size + j]<< "/" <<m_k_cluster_mass[lattice[i*size + j]] << "\t";
+    //         std::cout << "\n";
+    //     }
+    // std::cout << "\n**********************************************\n";
 }
 
-auto CheckSite(int lattice[], int m_k_cluster_mass[], int k_cluster_label,
-               const int size, const int site_index)
+void RunExperiment(int m_k_cluster_mass[], const int size, const double treshold, const int seed)
 {
-    if (site_index / size > 0) // not in top row
-    if (site_index % size > 0) // not at left border
-    if 
-}
-
-
-auto FindOriginalCluster(int lattice[], int m_k_cluster_mass[], 
-                         const int size, const int site_index)
-{
-
-}
-
-
-auto RunExperiment(const int size, const double treshold, const int seed)
-{
-    int lattice[size * size]{0};
-
+    int* lattice= (int*)std::calloc(size*size, sizeof(int));
     PopulateLattice(lattice, size, treshold, seed);
-
-    int m_k_cluster_mass[size]{0}; // probably too big, but eh 
-
-    bool spanning_cluster= false;
-
     int k_cluster_label= 2;
 
-    for (int ij= 0; ij < size*size; ij++)
-    {
-        CheckSite(lattice, m_k_cluster_mass, k_cluster_label, size, ij);        
-    }
-
-
-    return std::make_tuple((int)spanning_cluster, fire_duration, shortest_path);
+    for (long int ij= 0; ij < size*size; ij++)
+        if (lattice[ij] == 1)
+            CheckSite(lattice, m_k_cluster_mass, k_cluster_label, size, ij);        
+    std::free(lattice);
 }
-
-
-
 
 int main(int argc, char* argv[])
 {
@@ -148,33 +108,31 @@ int main(int argc, char* argv[])
     const int initial_seed= atoi(argv[3]);
     const int num_samples= atoi(argv[4]);
 
-    const double treshold_step_size= 1.0 / treshold_steps;
-    std::vector<double> tresholds{0.0};
+    const double treshold_step_size= 1.0 / treshold_steps; // Build distribution of occupation probs
+    std::vector<double> tresholds{0.592746}; // Init vector of probs and make sure p_c is included
     for (auto i= 1; i <= treshold_steps; i++)
         tresholds.push_back(i * treshold_step_size);
-    
-    for (auto treshold : tresholds)
-    {
-        int num_spanning_clusters= 0;
-        long int total_fire_duration= 0;
-        long int total_shortest_path= 0;
-        for (auto n= 0; n < num_samples; n++)
-        {
-            auto result= RunExperiment(size, treshold, initial_seed + n);
-            num_spanning_clusters += std::get<0>(result);
-            total_fire_duration += std::get<1>(result);
-            total_shortest_path += std::get<2>(result);
-        }
-        const double percolation_rate= num_spanning_clusters / (float)num_samples;
-        const double avg_fire_duration= total_fire_duration / (float)num_samples;
-        const double avg_shortest_path= (num_spanning_clusters < 1 ? 0.0 :
-                                         total_shortest_path / (float)num_spanning_clusters);
 
-        std::cout << treshold << "\t"
-                  << percolation_rate << "\t"
-                  << avg_fire_duration << "\t"
-                  << avg_shortest_path << std::endl;
+    for (auto& treshold : tresholds) // Run experiments on all chosen occupation probs
+    {
+        double histogram[size*size + 1]{0.0};
+        std::cout << "#p=" << treshold << std::endl;
+        for (auto n= 0; n < num_samples; n++) // Run num_samples amount of experiments
+        {
+            int* m_k_cluster_mass= (int*)std::calloc(size*size, sizeof(int));
+            RunExperiment(m_k_cluster_mass, size, treshold, initial_seed + n);
+            for (int k= 2; k < size*size; k++) // Record this experiment run's result in histogram
+                if (m_k_cluster_mass[k] > 0)
+                    histogram[m_k_cluster_mass[k]] += 1.0; 
+            std::free(m_k_cluster_mass);
+        }
+        for (auto h= 1; h <= size*size; h++)
+        {
+            histogram[h] /= (num_samples * size * size); // Normalize histogram
+            if (histogram[h] > 0)
+                std::cout << h << "\t" << histogram[h] << std::endl; // Print if bin is non-zero
+        }
+        std::cout << "\n\n";
     }
     return 0;
 }
-

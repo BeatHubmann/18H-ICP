@@ -1,0 +1,28 @@
+set terminal pngcairo;
+set termopt enhanced;
+set key right top;
+set xlabel 'Cluster Size S';
+set ylabel 'Cluster Size Distribution n_s';
+set grid;
+
+
+set log y;
+set format y "10^{%L}"
+
+set output 'results_a.png';
+plot [0:50][] 'results.dat' i 1 u  1:2 w points title 'p=0.1', \
+              'results.dat' i 2 u  1:2 w points title 'p=0.2', \
+              'results.dat' i 3 u  1:2 w points title 'p=0.3', \
+              'results.dat' i 4 u  1:2 w points title 'p=0.4';
+
+set output 'results_c.png';
+plot [0:200][] 'results.dat' i 6 u  1:2 w points title 'p=0.6', \
+               'results.dat' i 7 u  1:2 w points title 'p=0.7', \
+               'results.dat' i 8 u  1:2 w points title 'p=0.8'; 
+
+
+set ylabel 'Cluster Size Distribution n_s L^2';
+set log x;
+set format x "10^{%L}"
+set output 'results_b.png';
+plot [][] 'results.dat' i 0 u  1:(1e6*$2) w points title 'p=p_c';
