@@ -1,0 +1,111 @@
+\documentclass[11pt,a4paper]{article}
+
+% These are extra packages that you might need for writing the equations:
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\lstset {language=C++,
+		 basicstyle=\ttfamily,
+         keywordstyle=\color{blue}\ttfamily,
+         stringstyle=\color{red}\ttfamily,
+         commentstyle=\color{purple}\ttfamily,
+         morecomment=[l][\color{magenta}]{\#},
+       	 basicstyle=\tiny}
+
+% You need the following package in order to include figures in your report:
+\usepackage{graphicx}
+
+% With this package you can set the size of the margins manually:
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+
+
+\begin{document}
+
+% Enter the exercise number, your name and date here:
+\noindent\parbox{\linewidth}{
+ \parbox{.25\linewidth}{ \large ICP, Exercise 03 }\hfill
+ \parbox{.5\linewidth}{\begin{center} \large Beat Hubmann \end{center}}\hfill
+ \parbox{.2\linewidth}{\begin{flushright} \large Oct 15, 2018 \end{flushright}}
+}
+\noindent\rule{\linewidth}{2pt}
+
+
+\section{Introduction}
+
+The Hoshen-Kopelman algorithm~\cite{hoshen} as described in~\cite{herrmann} was implemented for a square site lattice and a series of experiments was run
+to establish cluster size distributions $n_s$ as a function of different site occupation probabilities $p$.
+
+\section{Algorithm Description}
+The algorithm was implemented as described in the course lecture notes~\cite{herrmann}~(page 30) with one difference:\\
+To discover the original cluster of a candidate cluster with negative mass $M_k$, a recursive function instead of a while loop was used.
+
+\section{Results}
+
+
+The program was implemented as described above and submitted with this report. 
+A square site lattice of side length $L=1000$ and thus size $L^2 = 10^6$ and occupation probabilities $p \in \{0.1, 0.2, 0.3, 0.4, p_c=0.592746, 0.6, 0.7, 0.8\}$ were used.
+For each occupation probability, the experiment was run $c=100$ times with differing seeds for \texttt{C++}'s Mersenne Twister \texttt{mt19937} to initialize the lattice.
+The sizes of the obtained clusters were recorded and the total counts per size $\widetilde{n_s}$ over all $c$ experiments then normalized~(equation~\ref{eqn:1}) to obtain the cluster size distributions $n_s$.
+
+
+\begin{equation}
+n_s \leftarrow \frac{\widetilde{n_s}}{L^2 \cdot c}
+\label{eqn:1}
+\end{equation}
+
+The normalized $n_s$ were plotted against cluster size $s$ (figures~\ref{fig:a},~\ref{fig:b} and \ref{fig:c}) in emulation of the figures shown in the lecture notes~\cite{herrmann}~(page 31).
+
+\begin{figure}[ht]
+\begin{center}
+\includegraphics[scale=0.4]{results_a.png} 
+\end{center}
+\caption{Cluster size distribution for $p < p_c$.}
+\label{fig:a}
+\end{figure}
+
+\begin{figure}[ht]
+\begin{center}
+\includegraphics[scale=0.4]{results_b.png} 
+\end{center}
+\caption{Cluster size distribution for $p = p_c$.}
+\label{fig:b}
+\end{figure}
+
+\begin{figure}[ht]
+\begin{center}
+\includegraphics[scale=0.4]{results_c.png} 
+\end{center}
+\caption{Cluster size distribution for $p > p_c$.}
+\label{fig:c}
+\end{figure}
+
+\section{Discussion}
+The results were in line with the theoretical expectations from class.
+For some reason unknown to me, my personal machine's OS system wouldn't let me allocate memory for $L > 1023$ and terminated with a segmentation fault 11 whenever trying to do so. As the results already were satisfactory with $L=1000$, I didn't invest any further time in trouble shooting.
+\begin{thebibliography}{99}
+
+\bibitem{herrmann}
+	Herrmann, H. J.,
+	Singer, H. M.,
+	Mueller L.,
+	Buchmann, M.-A.,\\
+	\emph{Introduction to Computational Physics - Lecture Notes},\\
+	ETH Zurich,\\
+	2017.
+	
+\bibitem{hoshen}
+	Hoshen, J.,
+	Kopelman, R.,\\
+	\emph{Percolation and cluster distribution. I. Cluster multiple labeling technique and critical concentration algorithm},\\
+	Phys. Rev. B 14, 3428,\\
+	1976.
+
+\end{thebibliography}
+
+
+
+\end{document}

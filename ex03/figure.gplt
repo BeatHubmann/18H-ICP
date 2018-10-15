@@ -1,7 +1,7 @@
 set terminal pngcairo;
 set termopt enhanced;
 set key right top;
-set xlabel 'Cluster Size S';
+set xlabel 'Cluster Size s';
 set ylabel 'Cluster Size Distribution n_s';
 set grid;
 
