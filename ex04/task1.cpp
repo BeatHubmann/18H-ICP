@@ -86,18 +86,59 @@ void CheckSite(int lattice[], int m_k_cluster_mass[], int& k_cluster_label,
 
 void TagLargestCluster(int lattice[], const int size, const int largest_cluster_id)
 {
+    for (int ij= 0; ij < size*size; ij++)
+    {
+        if (lattice[ij] == largest_cluster_id)
+            lattice[ij]= 1;
+        else
+            lattice[ij]= 0;
+    }
 
 }
+
+void ScanBox(const int lattice[], const int size, const int center, const int range)
+{
+
+    
+}
+
 
 const int FindOccupiedNearCenter(const int lattice[], const int size)
 {
-
-    return 1;
+    const int starting_index{(size / 2) * size + (size / 2)};
+    if (lattice[starting_index] == 1)
+        return starting_index;
+    int center_index{-1}; // Set to be outside lattice
+    int search_range{1};
+    while (center_index < 0 && search_range < size / 2)
+    {
+        const int center_row{center_index % size};
+        const int center_col{center_index / size};
+        const int start_row{std::max(0, center_row - search_range)};
+        const int start_col{std::max(0, center_col - search_range)};
+        const int end_row{std::min(size, center_row + search_range + 1)}; // 1 index post the end
+        const int end_col{std::min(size, center_col + search_range + 1)}; // 1 index post the end
+        int j{start_col};
+        while (center_index < 0 && j < e)
+        {
+            while (center_index < 0 && ij < starting_index + search_range)
+            {
+                if (lattice[ij] == 1)
+                    center_index= ij;
+                ij++;
+            }
+            ij= starting_index - search_range * size - search_range;
+        }
+         search_range++;
+    }
+    return center_index;
 }
 
-const int SandboxAlgorithm(const int lattice[], const int size, const int center, const int radius)
+const int SandboxAlgorithm(const int lattice[], const int size, const int center, const int range)
 {
-
+    const int starting_row= std::max(0, center % size - size * range/2);
+    const int ending_row= std::min(size - 1, center % size + size * range/2);
+       for (int i= center - range/2; i <= center)
     return 1;
 }
 
