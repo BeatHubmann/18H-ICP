@@ -1,0 +1,33 @@
+set terminal postscript eps color enhanced; 
+set encoding utf8;
+set grid;
+
+set output 'figure1.eps'
+
+set key left top;
+set xlabel 'Sandbox Size R';
+set ylabel 'Cluster Mass M(R)';
+set log xy;
+set format x "10^{%L}"
+set format y "10^{%L}"
+
+a = 0.75;
+k = 2;
+f(x) = a * x**k
+
+fit [1:100] f(x) 'results.dat' i 1 u 1:2:(1/$2**2) via k;
+
+plot [3:][] 'results.dat' i 0 u  1:2 w lines title 'p=0.58', \
+            'results.dat' i 1 u  1:2 w lines title 'p=p_c', \
+             a * x**k  title sprintf("p=p_c : slope = %.2f", k), \
+            'results.dat' i 2 u  1:2 w lines title 'p=0.61';
+
+set output 'figure2.eps'
+
+set xlabel 'Lattice Constant 1/{/Symbol e}';
+set ylabel 'Non-empty Boxes N({/Symbol e})';
+
+plot [][] 'results.dat' i 3 u  (1/$1):2 w lines title 'p=0.58', \
+          'results.dat' i 4 u  (1/$1):2 w lines title 'p=p_c', \
+          'results.dat' i 5 u  (1/$1):2 w lines title 'p=0.61';
+
