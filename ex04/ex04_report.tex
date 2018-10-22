@@ -27,65 +27,59 @@
 
 % Enter the exercise number, your name and date here:
 \noindent\parbox{\linewidth}{
- \parbox{.25\linewidth}{ \large ICP, Exercise 03 }\hfill
+ \parbox{.25\linewidth}{ \large ICP, Exercise 04 }\hfill
  \parbox{.5\linewidth}{\begin{center} \large Beat Hubmann \end{center}}\hfill
- \parbox{.2\linewidth}{\begin{flushright} \large Oct 15, 2018 \end{flushright}}
+ \parbox{.2\linewidth}{\begin{flushright} \large Oct 21, 2018 \end{flushright}}
 }
 \noindent\rule{\linewidth}{2pt}
 
 
 \section{Introduction}
 
-The Hoshen-Kopelman algorithm~\cite{hoshen} as described in~\cite{herrmann} was implemented for a square site lattice and a series of experiments was run
-to establish cluster size distributions $n_s$ as a function of different site occupation probabilities $p$.
+To measure the fractal dimension of the percolating cluster in a square site lattice, both the Sandbox Algorithm and the Box Counting algorithm as described in~\cite{herrmann} were implemented. The largerst cluster found by the Hoshen-Kopelman algorithm~\cite{hoshen} was used as percolating cluster.
 
 \section{Algorithm Description}
-The algorithm was implemented as described in the course lecture notes~\cite{herrmann}~(page 30) with one difference:\\
-To discover the original cluster of a candidate cluster with negative mass $M_k$, a recursive function instead of a while loop was used.
+The Hoshen-Kopelman algorithm implementation was taken over from the previously submitted exercise 03.\\
+Both the Sandbox and the Box Counting algorithm were implemented as described in the course lecture notes~\cite{herrmann}.\\
+For the box counting method, the choice was made to double the cell size at each step until reaching the lattice size $L$, i.e. $\epsilon \in \{1, 2, 4, 8, \ldots, L\}$.
 
 \section{Results}
 
 
 The program was implemented as described above and submitted with this report. 
-A square site lattice of side length $L=1000$ and thus size $L^2 = 10^6$ and occupation probabilities $p \in \{0.1, 0.2, 0.3, 0.4, p_c=0.592746, 0.6, 0.7, 0.8\}$ were used.
-For each occupation probability, the experiment was run $c=100$ times with differing seeds for \texttt{C++}'s Mersenne Twister \texttt{mt19937} to initialize the lattice.
-The sizes of the obtained clusters were recorded and the total counts per size $\widetilde{n_s}$ over all $c$ experiments then normalized~(equation~\ref{eqn:1}) to obtain the cluster size distributions $n_s$.
+A square site lattice of side length $L=1024$ and occupation probabilities $p \in \{0.58, p_c=0.592746, 0.61\}$ were used.
+As in the previous exercise, \texttt{C++}'s Mersenne Twister \texttt{mt19937} was used to initialize the lattices.
 
+\subsection{Experiment 1: Sandbox Algorithm}
+The box masses $M(R)$ where $M$ equals the numbers of sites occcupied by the largest (i.e. percolating) cluster at occupation probability $p$ in a box of increasing side length $R$ on a site lattice with side length $L=1024$, were recorded for $R \in \{3, 4, \cdots, L\}$. The results were plotted as $\log(M(R))$ versus $\log(R)$ as shown in figure~\ref{fig:1}.
 
-\begin{equation}
-n_s \leftarrow \frac{\widetilde{n_s}}{L^2 \cdot c}
-\label{eqn:1}
-\end{equation}
-
-The normalized $n_s$ were plotted against cluster size $s$ (figures~\ref{fig:a},~\ref{fig:b} and \ref{fig:c}) in emulation of the figures shown in the lecture notes~\cite{herrmann}~(page 31).
 
 \begin{figure}[ht]
 \begin{center}
-\includegraphics[scale=0.4]{results_a.png} 
+\includegraphics[scale=0.9]{figure1.eps} 
 \end{center}
-\caption{Cluster size distribution for $p < p_c$.}
-\label{fig:a}
+\caption{Sandbox Algorithm Results for $p \in \{0.58, p_c, 0.61\}$.}
+\label{fig:1}
 \end{figure}
 
-\begin{figure}[ht]
-\begin{center}
-\includegraphics[scale=0.4]{results_b.png} 
-\end{center}
-\caption{Cluster size distribution for $p = p_c$.}
-\label{fig:b}
-\end{figure}
+
+\subsection{Experiment 2: Box Counting Algorithm}
+The number of non-empty grid cells $N(\epsilon)$ where $\epsilon$ is the grid constant were recorded for $L=1024$ and $\epsilon \in \{1, 2, 4, 8, \ldots, L\}$ as described above. The results were plotted as $\log(N(\epsilon))$ versus $\log(\frac{1}{\epsilon})$ as shown in figure~\ref{fig:2}.
+
+
 
 \begin{figure}[ht]
 \begin{center}
-\includegraphics[scale=0.4]{results_c.png} 
+\includegraphics[scale=0.9]{figure2.eps} 
 \end{center}
-\caption{Cluster size distribution for $p > p_c$.}
-\label{fig:c}
+\caption{Box Counting Algorithm Results for $p \in \{0.58, p_c, 0.61\}$.}
+\label{fig:2}
 \end{figure}
 
 \section{Discussion}
-The results were in line with the theoretical expectations from class.
-For some reason unknown to me, my personal machine's OS system wouldn't let me allocate memory for $L > 1023$ and terminated with a segmentation fault 11 whenever trying to do so. As the results already were satisfactory with $L=1000$, I didn't invest any further time in trouble shooting.
+The slope of 1.88 of the line for $p=p_c$ in figure~\ref{fig:1} obtained from the Sandbox algorithm is well in line with the theoretical value of $d_f=\frac{91}{48} \approx 1.89$ for a 2D lattice and thus as expected.
+For some reason reason, \texttt{gnuplot} couldn't be brought to fit a slope to the line for $p=p_c$ in figure~\ref{fig:2} obtained from the Box Counting algorithm. However, a visual inspection reveals that the slope is just a tad under 2 and thus in line with both the sandbox algorithm results and theoretical expectations. 
+
 \begin{thebibliography}{99}
 
 \bibitem{herrmann}
@@ -105,7 +99,6 @@ For some reason unknown to me, my personal machine's OS system wouldn't let me a
 	1976.
 
 \end{thebibliography}
-
 
 
 \end{document}
