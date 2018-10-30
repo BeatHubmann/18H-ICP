@@ -6,8 +6,10 @@ all: task figures
 
 task: task.cpp
 
-figures: task figures.gplt
-	./task 1024 1 > results.dat
+results: task
+	./task 32 1100000 1 0.01 > results.dat
+
+figures: results figures.gplt
 	gnuplot figures.gplt
 
 .PHONY: clean

@@ -7,6 +7,10 @@
 #include <tuple>
 #include <cassert>
 
+static const double L{1.0}; // Box edge length
+static const int max_attempts{1000000}; // Number of MC attempts per config
+
+// Returns Euclidean 3d distance between coordinates i and j
 double Distance(const std::array<double, 3>& i, const std::array<double, 3>& j)
 {   
     return std::sqrt(std::pow(i[0] - j[0], 2) +
@@ -14,22 +18,21 @@ double Distance(const std::array<double, 3>& i, const std::array<double, 3>& j)
                      std::pow(i[2] - j[2], 2));
 }
 
+// Calculates the mean distance between all points of a given configuration
 double MeanDistanceConfig(const std::vector<std::array<double, 3>>& config)
 {
-    const int n= config.size();
+    const auto n{config.size()};
     double distance_sum{0.0};
     for (auto i= 0; i < n - 1; i++)
-        for (auto j= i + 1; j < n, i++)
-            distance_sum += Distance(config.at(i), config.at(j));
+        for (auto j= i + 1; j < n; j++)
+           distance_sum += Distance(config[i], config[j]);
     return distance_sum * 2 / n / (n - 1);
 }
 
-
-GenerateRandomCoords()
-
-bool CheckConfigValid(const std::vector<std::array<double, 3>>& config)
+// Checks if a given configuration is valid i.e. has no overlapping spheres
+bool CheckConfigValid(const std::vector<std::array<double, 3>>& config, const double radius)
 {
-    const int n= config.size();
+    const auto n{config.size()};
     bool valid{true};
     int i{0};
     do
@@ -37,105 +40,80 @@ bool CheckConfigValid(const std::vector<std::array<double, 3>>& config)
         int j{i + 1};
         do
         {
-            valid= (Distance(config[i], config[j] > 2 * R);
-            j++;
-        } while (j < n && valid); /// try to include ++ here later
-        i++;
-    } while (i < n - 1 && valid);
+            valid= (Distance(config[i], config[j]) > 2 * radius);
+        } while (j++ < n && valid);
+    } while (i++ < n - 1 && valid);
     return valid;
 }
 
-
-const std::vector<std::array<double, 3>>& GenerateConfig(const int n, const int seed)
+// Attempts to generate a valid configuration by sampling all coordinates for all spheres at once and only keeping the config if valid
+bool GenerateConfig(std::vector<std::array<double, 3>>& config, const int n, const double radius, const int seed)
 {
-    std::uniform_real_distribution<double> uniform_dist(0.0, 1.0);
+    std::uniform_real_distribution<double> uniform_dist(0.0, L);
+    bool valid{false};
     int attempt{0};
-    std::vector<std::array<double, 3>> config;
     do
     {
-        std::default_random_engine rd(seed + attempt);
+        config.clear();
+        std::mt19937 rd(seed + attempt);
         for (auto i= 0; i < n; i++)
-            config.push_back(std::array<double>{uniform_dist(rd),
-                                                uniform_dist(rd),
-                                                uniform_dist(rd)});
-    } while (attempt < max_attempts && ) 
-
+            config.push_back(std::array<double, 3>{{uniform_dist(rd),
+                                                    uniform_dist(rd),
+                                                    uniform_dist(rd)}});
+        valid= CheckConfigValid(config, radius);
+        attempt++;
+    } while (attempt < max_attempts && !valid);
+    return valid;
 }
 
-const std::tuple<int, double> RunExperiment1(const int n, const int M, const int seed)
+// Conducts one iteration of the experiment for given number of spheres n and number of configurations M
+const std::tuple<int, int, double> RunExperiment(const int n, const int M, const double radius, const int initial_seed)
 {   
     double distance_sum{0.0};
     for (auto i= 0; i < M; i++)
     {
-        std::vector<std::array<double, 3>> config= GenerateConfig(n, seed);
+        std::vector<std::array<double, 3>> config{};
+        bool success{GenerateConfig(config, n, radius, initial_seed + i * max_attempts)};
+        assert(success && "No valid configuration found: Adjust sphere number and/or radius.");
         distance_sum += MeanDistanceConfig(config);
     }
-    const double ensemble_avg_distance{distance_sum / M};
-    return std::make_tuple(M, ensemble_avg_distance); 
+    return std::make_tuple(n, M, distance_sum / M); // <ensemble size, ensemble avg distance>
 }
-
-
-RunExperiment2(const int n, const int M, const int seed)
-
-
 
 int main(int argc, char* argv[])
 {
-    if (argc < 4 || argc > 4 || argv[1] == "-h") // check command line arguments and give some help
+    if (argc < 5 || argc > 5 || argv[1] == "-h") // check command line arguments and give some help
     {  
         std::cerr << "Usage: " << argv[0]
-                  << " n(int):Max number of particles   M(int):Max number of configurations  s(int):Initial RNG seed"
+                  << " n(int): Number of particles     M(int): Max number of configurations   s(int): Initial RNG seed"
+                  << " R(double): Sphere radius \n"
                   << std::endl << std::endl;
         return 1;
     }
     const int n{atoi(argv[1])}; // Max number of particles
     const int M{atoi(argv[2])}; // Max number of configurations
-    static const int initial_seed{atoi(argv[3])}; // Initial RNG seed
+    const int initial_seed{atoi(argv[3])}; // Initial RNG seed
+    const double R{atof(argv[4])}; // Sphere radius
 
-    static const int L{1}; // Box edge length
-    static const double R{0.01}; // Sphere radius
-    static const int max_attempts{1000}; // Maximum attempts at generating configuration
+    const double density{n * 4. / 3. * M_PI * R*R*R / (L*L*L)}; // For reference
 
-    std::vector<int> num_spheres{};
-    for (auto i= n; i > 0; i /= 2)
-        num_spheres.push_back(i);
-
-    std::vector<int> num_configs{};
-    for (auto i= M; i > 0; i /= 2)
+    std::vector<int> num_configs{}; // Generate vector of Ms to conduct experiments for
+    for (auto i= 1; i <= M; i *= 2)
         num_configs.push_back(i);
     
+    std::vector<int> num_spheres{}; // Generate vector of ns to conduct experiments for
+    for (auto i= 2; i < n + 1; i *= 2)
+        num_spheres.push_back(i);
 
-    std::vector<std::tuple<int, int>> results_1{};
-    for (const auto& config : num_configs)
-        results_1.push_back(RunExperiment1(n, config, seed));
-
-    // std::vector<double> tresholds{0.58, 0.592746, 0.61}; // Init vector of probs and make sure p_c is included
-
-    // for (auto& treshold : tresholds) // Run experiments on all chosen occupation probs
-    // {
-    //     std::cout << "Experiment_1:Sandbox_Algorithm" << std::endl;
-
-    //     std::vector<std::tuple<int, int>> results= RunExperiment1(size, treshold, initial_seed);
-
-    //     std::cout << "p=" << treshold << std::endl;
-       
-    //     for (auto& result : results)
-    //         std::cout << std::get<0>(result) << "\t" << std::get<1>(result) << std::endl;
-    //     std::cout << "\n\n";
-    // }
-
-    // for (auto& treshold : tresholds)
-    // {
-    //     std::cout << "Experiment_2:Box_Counting_Algorithm" << std::endl;
-
-    //     std::vector<std::tuple<int, int>> results= RunExperiment2(size, treshold, initial_seed);
-
-    //     std::cout << "p=" << treshold << std::endl;
-       
-    //     for (auto& result : results)
-    //         std::cout << std::get<0>(result) << "\t" << std::get<1>(result) << std::endl;
-    //     std::cout << "\n\n";
-    // }
-
+    for (const auto& spheres: num_spheres) // Run experiment for all ns
+    {
+        std::vector<std::tuple<int, int, double>> results{};
+        for (const auto& config : num_configs) // For each n, run up to max ensemble size M
+            results.push_back(RunExperiment(spheres, config, R, initial_seed));
+        for (auto& result : results) // Print results
+            std::cout << std::get<0>(result) << "\t" << std::get<1>(result) << "\t" << std::get<2>(result)
+                      << std::endl;
+        std::cout << std::endl << std::endl; 
+    }
     return 0;
 }
