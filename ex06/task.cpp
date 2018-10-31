@@ -1,14 +1,16 @@
-#include <cstring>
+// #include <cstring>
 #include <iostream>
 #include <random>
 #include <cmath>
 #include <vector>
 #include <array>
 #include <tuple>
-#include <cassert>
+#include <algorithm>
+// #include <cassert>
 
-static const int L{200}; // lattice side length
+static const int L{20}; // lattice side length
 static const double J{1.0}; // exchange coupling constant
+static const double T_c{2 / std::log(1 + std::sqrt(2))}; // critical temp for 2D Ising model
 
 const int h(const std::vector<int> grid, const int i) // calculate h(i) w/ periodic b.c.
 {
@@ -122,9 +124,10 @@ int main(int argc, char* argv[])
     const int seed{atoi(argv[2])}; // initial RNG seed
     const bool cold_start{atoi(argv[3])}; // 1 =: start each T with fresh all +1 spin grid - not recommended
 
-    std::vector<double> temperatures{}; // generate vector of Ts to conduct experiments for
+    std::vector<double> temperatures{T_c}; // generate vector of Ts to conduct experiments for; make sure T_c is included
     for (auto t= 1.0; t < 5.1; t += 0.1)
         temperatures.push_back(t);
+    std::sort(temperatures.begin(), temperatures.end()); // sort in increasing order
 
     std::vector<int> grid(L * L, 1); // set up grid
     double E{-J * 4 * L * L / 2}; // initial energy for all sites 
