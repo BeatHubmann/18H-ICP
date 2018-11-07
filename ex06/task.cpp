@@ -1,14 +1,12 @@
-// #include <cstring>
 #include <iostream>
 #include <random>
 #include <cmath>
 #include <vector>
-#include <array>
+//#include <array>
 #include <tuple>
 #include <algorithm>
-// #include <cassert>
 
-static const int L{20}; // lattice side length
+static const int L{200}; // lattice side length
 static const double J{1.0}; // exchange coupling constant
 static const double T_c{2 / std::log(1 + std::sqrt(2))}; // critical temp for 2D Ising model
 
@@ -76,7 +74,7 @@ const std::tuple<double, double, std::vector<double>, double, double, std::vecto
     double sum_M{0}; // for equilibrium averages
     double sum_E{0};
 
-    for (auto s= 0; s < steps; s++) // perform Metropolis MC steps
+    for (auto s= 0; s < steps * 2; s++) // perform Metropolis MC steps: 1x steps for equilibrium, 1x steps for measurement
     {
         const int i{choice(rd)}; // choose site i
         const int h_i{h(grid, i)}; // get h_i
@@ -96,18 +94,22 @@ const std::tuple<double, double, std::vector<double>, double, double, std::vecto
                 E += delta_energy;
             }
         }
-        magnet_steps.push_back(M / (double)L / (double)L); // record site magnetization
-        energy_steps.push_back(E / (double)L / (double)L); // record site energy
-        sum_M += M; // update w.r.t. equilibrium average
-        sum_E += E;
+
+        if (s > steps && s % 10 == 0) // start recording measurements after having obtained equilibrium; only every 10th to avoid correlation 
+        {
+            sum_M += M; // update w.r.t. equilibrium average
+            sum_E += E;
+            magnet_steps.push_back(M / (double)L / (double)L); // record site magnetization
+            energy_steps.push_back(E / (double)L / (double)L); // record site energy
+        }
     }
     std::cout << "J/T = " << J/T << std::endl; // progress report
     // PrintGrid(grid);
     return std::make_tuple(E,
-                           sum_E / (double)steps / (double)L / (double)L,
+                           sum_E / (double)steps*10 / (double)L / (double)L,
                            energy_steps,
                            M,
-                           sum_M / (double)steps / (double)L / (double)L,
+                           sum_M / (double)steps*10 / (double)L / (double)L,
                            magnet_steps);
 }
 
@@ -146,6 +148,7 @@ int main(int argc, char* argv[])
         results.push_back(std::make_tuple(T, E_avg, E_steps, M_avg, M_steps)); // bundle into vector
     }
 
+    std::cout << std::endl << std::endl; 
     for (auto& result : results) // Print results
         std::cout << std::get<0>(result) << "\t" <<
                         std::get<1>(result) << "\t" <<

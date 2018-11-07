@@ -1,18 +1,21 @@
 set terminal postscript eps color enhanced; 
 set encoding utf8;
-set grid;
 
 set output 'figure1.eps'
 
 set key right top;
-set xlabel 'Ensemble Size M';
-set ylabel '<d_{mean}>';
-set log x;
-set format x "10^{%L}";
+set xlabel 'Temperature T [J/k_B]';
+set ylabel 'Site Energy E';
+set y2label 'Site Magnetization M';
 
-plot 'results.dat' i 0 u  2:3 w lines title 'n=2', \
-     'results.dat' i 1 u  2:3 w lines title 'n=4', \
-     'results.dat' i 2 u  2:3 w lines title 'n=8', \
-     'results.dat' i 3 u  2:3 w lines title 'n=16', \
-     'results.dat' i 4 u  2:3 w lines title 'n=32';
+set yrange [-2.2:-0.2];
+set ytics nomirror
+set y2range [-0.2:1.2];
+
+set y2tics
+
+plot 'results_100x100.dat' i 1 u 1:2 w lines title 'L=100: Energy', \
+     'results_100x100.dat' i 1 u 1:3 w lines axes x1y2 title 'L=100: Magnetization', \
+     'results_200x200.dat' i 1 u 1:2 w lines title 'L=200: Energy', \
+     'results_200x200.dat' i 1 u 1:3 w lines axes x1y2 title 'L=200: Magnetization';
 

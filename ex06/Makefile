@@ -7,7 +7,7 @@ all: task figures
 task: task.cpp
 
 results: task
-	./task 32 1100000 1 0.01 > results.dat
+	./task 1000000 1 0 > results_100x100.dat
 
 figures: results figures.gplt
 	gnuplot figures.gplt
