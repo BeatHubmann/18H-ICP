@@ -2,103 +2,143 @@
 #include <vector>
 #include <random>
 #include <cmath>
+#include <cassert>
 
-#include "latticeview.h"
-
-bool Coalescence(const std::vector<int>& lattice, const int L, const int x, const int y)
+double SquareDistance(const std::vector<double> a, const std::vector<double> b)
 {
-    return ((x - 1 > -1 && lattice[x - 1 + L *  y     ] > 0) ||
-            (x + 1 <  L && lattice[x + 1 + L *  y     ] > 0) ||
-            (y - 1 > -1 && lattice[x     + L * (y - 1)] > 0) ||
-            (y + 1 <  L && lattice[x     + L * (y + 1)] > 0));
+    assert (a.size() == b.size());
+    double square_dist{0.0};
+    for (auto i= 0; i < a.size(); i++)
+    {
+        square_dist += (a[i] - b[i]) * (a[i] - b[i]);
+    }
+    return square_dist;
 }
 
-void RandomWalk(std::vector<int>& lattice, const int L, const int seed, const double init_speed,
-           const int expiry, const int treshold, const int num_particles)
+double AbsDistance(const std::vector<double> a, const std::vector<double> b)
 {
-    for (auto p= 0; p < num_particles; p++)
-    {
-        std::mt19937 rd(seed + p);
-        std::uniform_int_distribution<int> coord(0, 4 * L - 1); // particles may launch all around the box
-        std::uniform_real_distribution<> angle(0, 2 * M_PI);
-        std::uniform_real_distribution<> speed(1.0 * init_speed, 1.5 * init_speed);
-        const int start{coord(rd)};
-        double x_double{0};
-        double y_double{0};
-        switch(start / L) // determine on which border particles launches:
-        {
-            case 0:                      y_double= start % L; break; // west
-            case 1: x_double= start % L; y_double= L - 1    ; break; // north
-            case 2: x_double= L - 1    ; y_double= start % L; break; // east
-            case 3: x_double= start % L;                      break; // south
-        }
-        double spd{init_speed}; // particle velocity
-        double ang{angle(rd)}; // particle angle
-        int num_steps{0};
-        bool diffusing{true};
-        while (diffusing && num_steps < expiry)
-        {
-            ang += angle(rd);
-            spd= speed(rd);
-            x_double += std::cos(ang) * spd;
-            if (x_double > (double)L - 1)
-                x_double -= L; // wrap around edges
-            if (x_double < 0)
-                x_double += L;
-            y_double += std::sin(ang) * spd;
-            if (y_double > (double)L - 1)
-                y_double -= L; // wrap around edges
-            if (y_double < 0)
-                y_double += L;
-            const int x{(int)x_double};
-            const int y{(int)y_double};
+    return std::sqrt(SquareDistance(a, b));
+}
 
-            if (Coalescence(lattice, L, x, y))
-            {
-                lattice[x + L * y] -= 1;
-                if (-lattice[x + L * y] > treshold)
-                {
-                    lattice[x + L * y]= (p / (num_particles / 7)) % 7 + 1; // got 7 colors
-                    diffusing= false;
-                }
-            } 
-            num_steps++;    
+bool Overlap(const std::vector<double> a, const std::vector<double> b,
+             const double r)
+{
+    return (AbsDistance(a, b) < r);
+}
+
+double RandomWalk(const int N, const int seed, const bool self_avoid=false,
+                  const bool spherical=false,
+                  const double segment_length=1.0,
+                  const double r= 0.0)
+{
+    std::mt19937 rd(seed);
+    std::uniform_real_distribution<> angle(0, M_PI);
+
+    std::vector<double> pos(3, 0.0), pos_new(3, 0.0);
+    double x{0.0}, y{0.0}, z{0.0};
+    double phi{0.0};
+    double theta{M_PI_2};
+    double sin_theta{1.0}, cos_theta{0.0};
+    int num_segments{0};
+
+    while (num_segments < N)
+    {
+        phi= 2 * angle(rd);
+        if (spherical)
+        {
+            theta= angle(rd);
+            sin_theta= std::sin(theta);
+            cos_theta= std::cos(theta);
+        }
+        pos_new[0]= pos[0] + segment_length * sin_theta * std::cos(phi);
+        pos_new[1]= pos[1] + segment_length * sin_theta * std::sin(phi);
+        pos_new[2]= pos[2] + segment_length * cos_theta;
+        if (!self_avoid || !Overlap(pos, pos_new, r))
+        {
+            pos= pos_new;
+            num_segments++;
+            // std::cout << "Segment no. " << num_segments << "\t"
+        //               << "x:\t" << pos[0] << "\t"
+        //               << "y:\t" << pos[1] << "\t"
+        //               << "z:\t" << pos[2] << std::endl;
+        }
+    }
+    return SquareDistance(std::vector<double>(3, 0.0), pos);
+}
+
+void RunExp1a(const int N, const int M, const int seed, const double segment_length)
+{
+    double sum_R_squared{0.0};
+    double sum_R_squared_squared{0.0};
+    for (auto k= 1; k <= M; k++)
+    {
+        const double ThisWalk{RandomWalk(N, seed + k)};
+        sum_R_squared += ThisWalk;
+        sum_R_squared_squared += ThisWalk * ThisWalk;
+        if (k % 10 == 0) // output every tenth step
+        {
+            const double ens_avg_R_squared{sum_R_squared / k};
+            std::cout << k << "\t"
+                      << ens_avg_R_squared << "\t"
+                      << std::sqrt(((sum_R_squared_squared / k) - ens_avg_R_squared * ens_avg_R_squared) / k) << std::endl;
         }
     }
 }
 
+void RunExp1b(const int N, const int M, const int seed, const double segment_length)
+{
+    
+}
+
+void RunExp2a(const int N, const int M, const int seed, const double segment_length,
+               const bool self_avoid, const bool spherical, const double r)
+{
+
+}
+
+void RunExp2b(const int N, const int M, const int seed, const double segment_length,
+               const bool self_avoid, const bool spherical, const double r)
+{
+
+}
 
 
 int main(int argc, char* argv[])
 {
-    if (argc < 7 || argc > 7 || argv[1] == "-h") // check command line arguments and give some help
+    if (argc < 8 || argc > 8 || argv[1] == "-h") // check command line arguments and give some help
     {  
-        std::cerr << "Usage: " << argv[0]
-                  << " L(int): lattice side length"
-                  << " seed(int): Initial RNG seed"
-                  << " speed(double): Initial particle speed"
-                  << " expiry(int): Particle lifetime if no coalescence"
-                  << " treshold(int): How many times site needs visiting before coalescence"
-                  << " num_particles(int): How many particles to be thrown in"
+        std::cerr << "Usage: " << argv[0] << "\n\t"
+                  << " N(int): Length of random walk" << "\n\t"
+                  << " M(int): Number of configurations" << "\n\t"
+                  << " Seed(int): Initial RNG seed" << "\n\t"
+                  << " Segment length(double): Random walk fixed segment length" << "\n\t"
+                  << " Self avoid (0/1): N/Y on self-avoiding" << "\n\t"
+                  << " 3D (0/1):N/Y on using 3D coordinates i.s.o. 2D coordinates" << "\n\t"
+                  << " Particle radius(double): Particle radius for self-avoiding random walk"
                   << std::endl << std::endl;
         return 1;
     }
-    static const int L{atoi(argv[1])}; // lattice side length  
-    const int seed{atoi(argv[2])}; // initial RNG seed
-    const double init_speed{atof(argv[3])}; // initial particle speed
-    const int expiry{atoi(argv[4])}; // how many steps until particle expires when not making contact
-    const int treshold{atoi(argv[5])}; // how many times a site has to be visited before coalescence
-    const int num_particles{atoi(argv[6])}; // how many particles are thrown into the system
+    const int N{atoi(argv[1])}; 
+    const int M{atoi(argv[2])};
+    const int seed{atoi(argv[3])};
+    const double segment_length{atof(argv[4])};
+    const bool self_avoid{(bool)atoi(argv[5])};
+    const bool spherical{(bool)atoi(argv[6])};
+    const double r{atof(argv[7])};
 
-    std::vector<int> lattice(L * L, 0);
-    for (auto i= (L / 2) - 1; i < (L / 2) + 1; i++)
-        for (auto j= (L / 2) - 1; j < (L / 2) + 1; j++)
-            lattice[L * i + j]= 1; // seed is center cluster of 4 sites
+    RunExp1a(N, M, seed, segment_length);
 
-    RandomWalk(lattice, L, seed, init_speed, expiry, treshold, num_particles);
+    RunExp1b(N, M, seed, segment_length);
 
-    const int image_size{std::max(L, 1024)};
-    Print_lattice(lattice, L, L, image_size, image_size);
+    RunExp2a(N, M, seed, segment_length, true, true, r);
+
+    RunExp2b(N, M, seed, segment_length, true, true, r);
+
+
+    // for (auto k=0; k < M; k++)
+    // {
+    //     std::cout << RandomWalk(N, seed + k, self_avoid, spherical, segment_length, r) << std::endl;
+    // }
 
     return 0;
 }

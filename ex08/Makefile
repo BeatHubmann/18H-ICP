@@ -4,7 +4,7 @@ CXXFLAGS = -std=c++1z -O3 -march=native -funroll-loops
 .PHONY: all
 all: main 
 
-main: main.cpp latticeview.h
+main: main.cpp 
 
 .PHONY: clean
 clean:
