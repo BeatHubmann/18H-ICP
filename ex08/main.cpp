@@ -1,21 +1,25 @@
 #include <iostream>
 #include <vector>
+#include <array>
 #include <random>
 #include <cmath>
 #include <cassert>
 
-double SquareDistance(const std::vector<double> a, const std::vector<double> b)
+double SquareDistance(const std::vector<double> a,
+                      const std::vector<double> b=std::vector<double>(3, 0.0))
 {
     assert (a.size() == b.size());
     double square_dist{0.0};
     for (auto i= 0; i < a.size(); i++)
     {
-        square_dist += (a[i] - b[i]) * (a[i] - b[i]);
+        const double comp_dist{a[i] - b[i]};
+        square_dist += comp_dist * comp_dist;
     }
     return square_dist;
 }
 
-double AbsDistance(const std::vector<double> a, const std::vector<double> b)
+double AbsDistance(const std::vector<double> a,
+                   const std::vector<double> b=std::vector<double>(3, 0.0))
 {
     return std::sqrt(SquareDistance(a, b));
 }
@@ -26,6 +30,24 @@ bool Overlap(const std::vector<double> a, const std::vector<double> b,
     return (AbsDistance(a, b) < r);
 }
 
+bool OverlapChain(const std::vector<std::vector<double>>& chain,
+                  const std::vector<double>& pos_new,
+                  const double r)
+{
+    bool overlap{false};
+    for (auto& element : chain)
+    {
+        if (Overlap(element, pos_new, r))
+        {
+            overlap= true;
+            break;
+        }
+    }
+    return overlap;
+}
+
+
+
 double RandomWalk(const int N, const int seed, const bool self_avoid=false,
                   const bool spherical=false,
                   const double segment_length=1.0,
@@ -33,15 +55,15 @@ double RandomWalk(const int N, const int seed, const bool self_avoid=false,
 {
     std::mt19937 rd(seed);
     std::uniform_real_distribution<> angle(0, M_PI);
-
-    std::vector<double> pos(3, 0.0), pos_new(3, 0.0);
-    double x{0.0}, y{0.0}, z{0.0};
+    std::vector<std::vector<double>> chain;
+    chain.reserve(N);
+    chain.push_back(std::vector<double>(3, 0.0));
+    std::vector<double> pos_new(3, 0.0);
     double phi{0.0};
     double theta{M_PI_2};
     double sin_theta{1.0}, cos_theta{0.0};
-    int num_segments{0};
 
-    while (num_segments < N)
+    while (chain.size() < N)
     {
         phi= 2 * angle(rd);
         if (spherical)
@@ -50,29 +72,39 @@ double RandomWalk(const int N, const int seed, const bool self_avoid=false,
             sin_theta= std::sin(theta);
             cos_theta= std::cos(theta);
         }
-        pos_new[0]= pos[0] + segment_length * sin_theta * std::cos(phi);
-        pos_new[1]= pos[1] + segment_length * sin_theta * std::sin(phi);
-        pos_new[2]= pos[2] + segment_length * cos_theta;
-        if (!self_avoid || !Overlap(pos, pos_new, r))
+        pos_new[0]= chain.back()[0] + segment_length * sin_theta * std::cos(phi);
+        pos_new[1]= chain.back()[1] + segment_length * sin_theta * std::sin(phi);
+        pos_new[2]= chain.back()[2] + segment_length * cos_theta;
+        if (!self_avoid || !OverlapChain(chain, pos_new, r))
         {
-            pos= pos_new;
-            num_segments++;
-            // std::cout << "Segment no. " << num_segments << "\t"
-        //               << "x:\t" << pos[0] << "\t"
-        //               << "y:\t" << pos[1] << "\t"
-        //               << "z:\t" << pos[2] << std::endl;
+            // std::cout.precision(4);
+            // std::cout << "Segment no. " << chain.size() << "\t\t"
+            //           << "x:\t"  << pos_new[0] << "\t\t"
+            //           << "y:\t"  << pos_new[1] << "\t\t"
+            //           << "z:\t"  << pos_new[2] << "\t\t"
+            //           << "Dst:\t"<< AbsDistance(chain.back(), pos_new) << "\t\t"
+            //           << "Ttl:\t"<< AbsDistance(pos_new) << std::endl;
+            chain.push_back(pos_new);
         }
     }
-    return SquareDistance(std::vector<double>(3, 0.0), pos);
+    return SquareDistance(chain.back());
 }
 
-void RunExp1a(const int N, const int M, const int seed, const double segment_length)
+void RunExp1(const int N, const int M, const int seed,
+             const double segment_length = 1.0,
+             const bool self_avoid = false,
+             const bool spherical = false,
+             const double r = 1.0)
 {
     double sum_R_squared{0.0};
     double sum_R_squared_squared{0.0};
     for (auto k= 1; k <= M; k++)
     {
-        const double ThisWalk{RandomWalk(N, seed + k)};
+        const double ThisWalk{RandomWalk(N, seed + k,
+                                         self_avoid,
+                                         spherical,
+                                         segment_length,
+                                         r)};
         sum_R_squared += ThisWalk;
         sum_R_squared_squared += ThisWalk * ThisWalk;
         if (k % 10 == 0) // output every tenth step
@@ -80,32 +112,45 @@ void RunExp1a(const int N, const int M, const int seed, const double segment_len
             const double ens_avg_R_squared{sum_R_squared / k};
             std::cout << k << "\t"
                       << ens_avg_R_squared << "\t"
-                      << std::sqrt(((sum_R_squared_squared / k) - ens_avg_R_squared * ens_avg_R_squared) / k) << std::endl;
+                      << std::sqrt(((sum_R_squared_squared / k)
+                                     - ens_avg_R_squared * ens_avg_R_squared) / k)
+                      << std::endl;
         }
     }
 }
 
-void RunExp1b(const int N, const int M, const int seed, const double segment_length)
+void RunExp2(const int N, const int M, const int seed,
+             const double segment_length = 1.0,
+             const bool self_avoid = false,
+             const bool spherical = false,
+             const double r = 1.0)
 {
-    
+    for (auto i= 8; i <= N; i *=2)
+    {
+        double sum_R_squared{0.0};
+        double sum_R_squared_squared{0.0};
+        for (auto k= 1; k <= M; k++)
+        {
+            const double ThisWalk{RandomWalk(i, seed + k,
+                                            self_avoid,
+                                            spherical,
+                                            segment_length,
+                                            r)};
+            sum_R_squared += ThisWalk;
+            sum_R_squared_squared += ThisWalk * ThisWalk;
+        }
+        const double ens_avg_R_squared{sum_R_squared / M};
+        std::cout << i << "\t"
+                  << ens_avg_R_squared << "\t"
+                  << std::sqrt(((sum_R_squared_squared / M)
+                                 - ens_avg_R_squared * ens_avg_R_squared) / M)
+                  << std::endl;
+    }
 }
-
-void RunExp2a(const int N, const int M, const int seed, const double segment_length,
-               const bool self_avoid, const bool spherical, const double r)
-{
-
-}
-
-void RunExp2b(const int N, const int M, const int seed, const double segment_length,
-               const bool self_avoid, const bool spherical, const double r)
-{
-
-}
-
 
 int main(int argc, char* argv[])
 {
-    if (argc < 8 || argc > 8 || argv[1] == "-h") // check command line arguments and give some help
+    if (argc < 8 || argc > 8 || argv[1] == "-h") // check cl args and give some help
     {  
         std::cerr << "Usage: " << argv[0] << "\n\t"
                   << " N(int): Length of random walk" << "\n\t"
@@ -125,14 +170,16 @@ int main(int argc, char* argv[])
     const bool self_avoid{(bool)atoi(argv[5])};
     const bool spherical{(bool)atoi(argv[6])};
     const double r{atof(argv[7])};
+    assert(segment_length >= r);
 
-    RunExp1a(N, M, seed, segment_length);
+    // const std::vector<double> a(3, 2.0), b(3, 3.0);
+    // std::cout << "Testing:\n"
 
-    RunExp1b(N, M, seed, segment_length);
+    //           << "AbsDist:" << AbsDistance(a, b) << "\n"
+    //           << "Overlap1:"<< Overlap(a, b, r) << std::endl;
+    RunExp1(N, M, seed, segment_length, self_avoid, spherical, r);
 
-    RunExp2a(N, M, seed, segment_length, true, true, r);
-
-    RunExp2b(N, M, seed, segment_length, true, true, r);
+    RunExp2(N, M, seed, segment_length, self_avoid, spherical, r);
 
 
     // for (auto k=0; k < M; k++)
