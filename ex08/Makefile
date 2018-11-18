@@ -8,4 +8,4 @@ main: main.cpp
 
 .PHONY: clean
 clean:
-	@rm -rf task *.dat *.eps *.aux *.log *.synctex *.ppm 
+	@rm -rf main *.dat *.eps *.aux *.log *.synctex *.ppm 
