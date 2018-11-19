@@ -1,0 +1,34 @@
+set terminal postscript eps color enhanced; 
+set encoding utf8;
+set grid;
+set key left top;
+
+set output 'figure1a.eps'
+set xlabel 'Ensemble Size M';
+set ylabel 'Error vs ensemble average random walk square end-to-end distance {/Symbol D}/<R^2>';
+set yrange[0:0.15];
+plot 'task1.dat' every 10 i 0 u 1:($3/$2) title 'Positions N=8192';
+
+set output 'figure1b.eps'
+set xlabel 'Positions N';
+set ylabel 'Ensemble average random walk square end-to-end distance <R^2>';
+set log xy;
+set autoscale;
+set format xy "10^{%L}";
+plot 'task1.dat' i 1 u 1:2:3 w yerrorlines title 'Ensemble size M=10^4';
+
+set output 'figure2a.eps'
+set xlabel 'Ensemble Size M';
+set ylabel 'Error vs ensemble average random walk square end-to-end distance {/Symbol D}/<R^2>';
+unset logscale xy;
+set yrange[0:0.15];
+unset format xy;
+plot 'task2.dat' every 10 i 0 u 1:($3/$2) title 'Positions N=8192';
+
+set output 'figure2b.eps'
+set xlabel 'Positions N';
+set ylabel 'Ensemble average random walk square end-to-end distance <R^2>';
+set log xy;
+set autoscale;
+set format xy "10^{%L}";
+plot 'task2.dat' i 1 u 1:2:3 w yerrorlines title 'Ensemble size M=10^4';
