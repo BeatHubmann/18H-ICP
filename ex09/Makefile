@@ -1,19 +1,18 @@
 CXX = g++-8
 CXXFLAGS = -std=c++1z -O3 -march=native -funroll-loops -ffast-math
+CXXFLAGS += -I/usr/local/include/eigen3
+
 
 .PHONY: all
-all: main task1.dat task2.dat figures 
+all: main tasks.dat figures 
 
 main: main.cpp 
 
-task1.dat: main
-	./main 8192 10000 1 1.0 0 0 1.0 > task1.dat
-
-task2.dat: main
-	./main 8192 10000 1 1.0 1 1 1.0 > task2.dat
+tasks.dat: main
+	./main 2 2 1.7 2.3 > tasks.dat
 
 .PHONY: figures
-figures: task1.dat task2.dat figures.gplt
+figures: tasks.dat figures.gplt
 	gnuplot figures.gplt
 
 .PHONY: clean

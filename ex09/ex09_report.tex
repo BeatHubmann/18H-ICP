@@ -9,6 +9,7 @@
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{outlines}
+\usepackage{mathtools}
 
 \lstset {language=C++,
 		 basicstyle=\ttfamily,
@@ -29,102 +30,111 @@
 
 % Enter the exercise number, your name and date here:
 \noindent\parbox{\linewidth}{
- \parbox{.25\linewidth}{ \large ICP, Exercise 08 }\hfill
+ \parbox{.25\linewidth}{ \large ICP, Exercise 09 }\hfill
  \parbox{.5\linewidth}{\begin{center} \large Beat Hubmann \end{center}}\hfill
- \parbox{.2\linewidth}{\begin{flushright} \large Nov 19, 2018 \end{flushright}}
+ \parbox{.2\linewidth}{\begin{flushright} \large Nov 25, 2018 \end{flushright}}
 }
 \noindent\rule{\linewidth}{2pt}
 
 
 \section{Introduction}
 
-A simple random walk in both two and three dimensions was implemented in continuous space (i.e. not on a grid).
-Ensembles of walks of length up to $N=8192$ positions were generated non-self avoiding and self-avoiding and the 
-effect of ensemble size $M$ and length $N$ on the ensemble average end-to-end square distance and its error observed.
+Both the Newton-Raphson method and the Secant method were implemented and employed
+to find an extremum of a continuous multivariate function. If started on a point close
+enough to the extremum, both (very similar) methods were found to converge on the maximum
+which was known analytically in the case under consideration.
 
 \section{Algorithm Description}
-The algorithm is implemented in continuous space using polar coordinates. For the case of self avoiding random walks,
-special consideration had to be given to detect and abort a walk which has gotten stuck inside its own geometry.
-The main random walk algorithm's structure is as follows:
+While the algorithm as such is quite simple, using it on the given function $F(x, y) = e^{-(x - x_0)^2 -(y -y_0)^2}$ requires
+some setup.\\
+Analogous to the univariate case, to find the (global) maximum of $F(x,y)$, we must find the root of $\vec{\nabla} F(x, y)$,
+or in other words, the solution of $ \vec{0} = \vec{f}(x,y) \coloneqq \vec{\nabla}F(x,y)$ (see equation~\ref{eqn:1}).
+The Jacobi matrix of $f(x,y)$ required by the Newton-Raphson method then is as described
+by equation~\ref{eqn:2}.
+
+
+\begin{equation}
+	\begin{pmatrix}
+		0 \\
+		0 
+	\end{pmatrix}
+	=
+	\vec{f}(x,y) \coloneqq 
+	\begin{pmatrix}
+		\partial F(x,y)/\partial x \\
+		\partial F(x,y)/\partial y
+	\end{pmatrix}
+	=
+	\begin{pmatrix}
+		-2(x-x_0) \cdot e^{-(x - x_0)^2 -(y -y_0)^2} \\
+		-2(y-y_0) \cdot e^{-(x - x_0)^2 -(y -y_0)^2}
+	\end{pmatrix}
+	\label{eqn:1}
+\end{equation}
+
+
+\begin{equation}
+	\begin{array}{lll}
+	\vec{\vec{J}}_f(x,y)
+	& =
+	\begin{pmatrix}
+		\partial f_x(x,y)/ \partial x & \partial f_x(x,y)/ \partial y \\
+		\partial f_y(x,y)/ \partial x & \partial f_y(x,y)/ \partial y \\
+	\end{pmatrix}
+	 =
+	\begin{pmatrix}
+		\partial^2 F(x,y) / \partial x^2 & \partial^2 F(x,y) / \partial x \partial y \\
+		\partial^2 F(x,y) / \partial y \partial x & \partial^2 F(x,y) / \partial x^2 
+	\end{pmatrix}
+	= \\
+	& =
+	e^{-(x - x_0)^2 -(y -y_0)^2} \cdot  
+	\begin{pmatrix}
+	4(x - x_0) - 2 & 4(x-x_0)(y-y_0) \\
+	4(x - x_0)(y - y_0) & 4(y - y_0)^2 - 2	
+	\end{pmatrix}
+\end{array}
+	\label{eqn:2}
+\end{equation}
+
+For brevity, we refer to the task description for the interpolating Jacobian of 
+the Secant method.
+
+With the only difference between the Newton-Raphson method and the Secant method
+being the way the Jacobian matrix is calculated, the algorithm then works as follows:
 \begin{outline}
-	\1 Start random walk at origin $(0,0,0)$; disregard z-axis here and below for 2D case
-	\1 Generate random starting polar coordinate angles $\phi, \theta$
-	\1 While random walk has less than $N$ sites:
-		\2 Randomly modify $\phi$ (2D); $\phi, \theta$ (3D)
-		\2 Calculate next site position using $\phi, r$ (2D); $\phi, \theta, r$ (3D)
-		\2 If self avoiding:
-			\3 Check new position doesn't overlap with previous sites
-				\4 If overlap: Increase attempt count \& terminate walk if count == limit, else go back to modify $\phi, \theta$ for next candidate position
-				\4 Else if no overlap: Set attempt count to zero; add new position to chain
-		\2 Else if not self avoiding:
-			\3 Add new position to chain	
-	\1 return squared end-to-end distance origin $\leftrightarrow$ final position $N$
+\1 Choose starting point $\vec{x}_0$ close enough to suspected maximum
+\1 While $f(x_{n+1}) > \epsilon$
+	\2 Do $\vec{x}_{n+1} = \vec{x}_n - (\vec{\vec{J}}_f(\vec{x}_n))^{-1} \cdot f(\vec{x}_n)$
+\1 Output $\vec{x}_{n+1}$
 \end{outline}
-
-
 \section{Results}
 
 The program was implemented as described above and submitted with this report. 
-
-\subsection{Task 1}
-
-The error $\Delta$ was found to behave as $\Delta \propto \frac{\langle R^2 \rangle}{\sqrt{M}}$ for $M \rightarrow \infty$ as
-expected and as shown in figure~\ref{fig:1a}. Selecting an ensemble size of $M=10^4$ thus yields
-an error of approximately 1\%.
+For the given problem, the Jacobian matrices of the methods are almost equal,
+and both were found to converge for starting values $x,y$ in the range $x \in [x_0 - \xi, x_0 + \xi ], y \in [y_0 - \upsilon, y_0 + \upsilon]; \quad \xi=\upsilon=0.35$ 
+(see figures~\ref{fig:1}~and~\ref{fig:2}).
 
 \begin{figure}[ht]
 \begin{center}
-\includegraphics[scale=1.2]{figure1a.eps} 
+\includegraphics[scale=1.2]{figure1.eps} 
 \end{center}
-\caption{Relative error $\Delta / \langle R^2 \rangle$ vs ensemble size $M$ for non-self avoiding 2D continuous random walk.}
-\label{fig:1a}
+\caption{Convergence steps of Newton-Raphson method to find maximum of $F(x,y)=e^{-(x - x_0)^2 -(y -y_0)^2}; x_0=y_0=2$.}
+\label{fig:1}
 \end{figure}
-
-Also, as figure~\ref{fig:1b} shows, the ensemble average squared end-to-end distance behaves as expected with
-$\langle R^2(N) \rangle \propto N$ for $N \rightarrow \infty$.
-
-\begin{figure}[ht]
-	\begin{center}
-	\includegraphics[scale=1.2]{figure1b.eps} 
-	\end{center}
-	\caption{Ensemble average squared end-to-end distance $\langle R^2(N)\rangle$ vs random walk lenght $N$ for non-self avoiding 2D continuous random walk.}
-	\label{fig:1b}
-	\end{figure}
-
-\subsection{Task 2}
-
-Now for a self avoiding random walk in three dimensions, the error behaves as in task 1 as $\Delta \propto \frac{\langle R^2 \rangle}{\sqrt{M}}$ for $M \rightarrow \infty$
- as shown in figure~\ref{fig:2a}.
 
 \begin{figure}[ht]
 \begin{center}
-\includegraphics[scale=1.2]{figure2a.eps} 
+\includegraphics[scale=1.2]{figure2.eps} 
 \end{center}
-\caption{Relative error $\Delta / \langle R^2 \rangle$ vs ensemble size $M$ for self avoiding 3D continuous random walk.}
-\label{fig:2a}
+\caption{Convergence steps of Secant method to find maximum of $F(x,y)=e^{-(x - x_0)^2 -(y -y_0)^2}; x_0=y_0=2$.}
+\label{fig:2}
 \end{figure}
-
-blublub
-
-As figure~\ref{fig:2b} shows, the ensemble average squared end-to-end distance no longer behaves as in the non-self avoiding
-2D where we had $\langle R^2(N) \rangle \propto N$ for $N \rightarrow \infty$, but seemingly as a power law with an exponent
-of slightly above one. This is reflected by the slope of the straight line in figure~\ref{fig:2b}.
-
-\begin{figure}[ht]
-	\begin{center}
-	\includegraphics[scale=1.2]{figure2b.eps} 
-	\end{center}
-	\caption{Ensemble average squared end-to-end distance $\langle R^2(N)\rangle$ vs random walk lenght $N$ for self avoiding 3D continuous random walk.}
-	\label{fig:2b}
-	\end{figure}
-
-
 
 \section{Discussion}
-The results were all in line with expectations. To me, the biggest challenge was to write the algorithm such that trapped
-walks get thrown away when really stuck but not too early as otherwise the chance to obtain complete walks with larger $N$ 
-drops rapidly.
-
+Both methods were found to converge in an equal amount of steps. As expected, 
+the starting coordinates have to be chosen close to the actual maximum for the methods
+to converge.
 % \begin{thebibliography}{99}
 
 
