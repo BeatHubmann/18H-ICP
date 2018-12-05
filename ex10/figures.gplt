@@ -1,0 +1,58 @@
+set terminal postscript eps color enhanced; 
+set encoding utf8;
+set grid;
+set key right top;
+
+set xlabel 'x [m]';
+set ylabel 'z [m]'; 
+set ticslevel 0;
+
+set output 'figure1_1.eps'
+plot 'output.dat' i 0 u 4:5 w lines title '{/Symbol a}=10 deg', \
+     'output.dat' i 1 u 4:5 w lines title '{/Symbol a}=20 deg', \
+     'output.dat' i 1 u 4:5 w lines title '{/Symbol a}=30 deg', \
+     'output.dat' i 3 u 4:5 w lines title '{/Symbol a}=40 deg', \
+     'output.dat' i 8 u 4:5 w lines title '{/Symbol a}=45 deg', \
+     'output.dat' i 4 u 4:5 w lines title '{/Symbol a}=50 deg', \
+     'output.dat' i 5 u 4:5 w lines title '{/Symbol a}=60 deg', \
+     'output.dat' i 6 u 4:5 w lines title '{/Symbol a}=70 deg', \
+     'output.dat' i 7 u 4:5 w lines title '{/Symbol a}=80 deg';
+
+set output 'figure1_2.eps'
+plot 'output.dat' i 9 u 4:5 w lines title '{/Symbol a}=10 deg', \
+     'output.dat' i 10 u 4:5 w lines title '{/Symbol a}=20 deg', \
+     'output.dat' i 11 u 4:5 w lines title '{/Symbol a}=30 deg', \
+     'output.dat' i 12 u 4:5 w lines title '{/Symbol a}=40 deg', \
+     'output.dat' i 17 u 4:5 w lines title '{/Symbol a}=45 deg', \
+     'output.dat' i 13 u 4:5 w lines title '{/Symbol a}=50 deg', \
+     'output.dat' i 14 u 4:5 w lines title '{/Symbol a}=60 deg', \
+     'output.dat' i 15 u 4:5 w lines title '{/Symbol a}=70 deg', \
+     'output.dat' i 16 u 4:5 w lines title '{/Symbol a}=80 deg';
+
+set output 'figure1_3.eps'
+plot 'output.dat' i 18 u 4:5 w lines title '{/Symbol a}=10 deg', \
+     'output.dat' i 19 u 4:5 w lines title '{/Symbol a}=20 deg', \
+     'output.dat' i 20 u 4:5 w lines title '{/Symbol a}=30 deg', \
+     'output.dat' i 21 u 4:5 w lines title '{/Symbol a}=40 deg', \
+     'output.dat' i 26 u 4:5 w lines title '{/Symbol a}=45 deg', \
+     'output.dat' i 22 u 4:5 w lines title '{/Symbol a}=50 deg', \
+     'output.dat' i 23 u 4:5 w lines title '{/Symbol a}=60 deg', \
+     'output.dat' i 24 u 4:5 w lines title '{/Symbol a}=70 deg', \
+     'output.dat' i 25 u 4:5 w lines title '{/Symbol a}=80 deg';
+     
+set output 'figure1_4.eps'
+plot 'output.dat' i 27 u 4:5 w lines title '{/Symbol a}=10 deg', \
+     'output.dat' i 28 u 4:5 w lines title '{/Symbol a}=20 deg', \
+     'output.dat' i 29 u 4:5 w lines title '{/Symbol a}=30 deg', \
+     'output.dat' i 30 u 4:5 w lines title '{/Symbol a}=40 deg', \
+     'output.dat' i 35 u 4:5 w lines title '{/Symbol a}=45 deg', \
+     'output.dat' i 31 u 4:5 w lines title '{/Symbol a}=50 deg', \
+     'output.dat' i 32 u 4:5 w lines title '{/Symbol a}=60 deg', \
+     'output.dat' i 33 u 4:5 w lines title '{/Symbol a}=70 deg', \
+     'output.dat' i 34 u 4:5 w lines title '{/Symbol a}=80 deg';
+
+
+set xlabel '{/Symbol g}';
+set ylabel '{/Symbol a}_{max}';
+set output 'figure2.eps';
+plot 'output.dat' i 36 u 1:2 w points pt 7 title 'v=40 m/s';
