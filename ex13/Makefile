@@ -1,20 +1,19 @@
 CXX = g++-8
-CXXFLAGS = -std=c++1z -O3 -march=native -funroll-loops -ffast-math
-CXXFLAGS += -I/usr/local/include/eigen3
+CXXFLAGS = -std=c++17 -O3 -march=native -funroll-loops -ffast-math
 
 .PHONY: all
-all: main output figures 
+all: main output movie 
 
 main: main.cpp 
 
 .PHONY: output
 output: main
-	./main 50 0.25 0.75 
+	./main 0.1 0.01 10 1000 
 
-.PHONY: figures
-figures: output plot.py
+.PHONY: movie
+movie: output plot.py
 	python3 plot.py
 
 .PHONY: clean
 clean:
-	@rm -rf main *.dat *.aux *.log *.synctex *.txt 
+	@rm -rf main *.dat *.aux *.log *.synctex *.txt *.raw  
